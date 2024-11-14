@@ -26,7 +26,15 @@ jobs:
       # Клонируем репозиторий
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
+      # Устанавливаем Docker Compose
+      - name: Set up Docker Compose
+        run: sudo apt-get update && sudo apt-get install docker-compose-plugin -y
+
+      # Собираем и запускаем контейнеры через Docker Compose
+      - name: Build and Start Docker containers
+        run: docker compose up -d --build
+
       # Устанавливаем GO
       - name: Set up GO
         uses: actions/setup-go@v4
