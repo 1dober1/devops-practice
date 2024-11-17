@@ -54,11 +54,11 @@ jobs:
       - name: Install Docker Compose
         run: sudo pip install docker-compose
 
-     - name: Run application
-      run: |
-        DB_USER=${{ secrets.DB_USER }} \
-        DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-        DB_HOST=db \
-        DB_PORT=1433 \
-        DB_NAME=testdb \
-        docker-compose up -d
+      - name: Run application
+        run: |
+          DB_USER=${{ secrets.DB_USER }} \
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+          DB_HOST=db \
+          DB_PORT=1433 \
+          DB_NAME=testdb \
+          docker-compose up -d
