@@ -26,9 +26,6 @@ func main() {
 		panic("Error loading .env file")
 	}
 
-	fmt.Println("DB_USER:", os.Getenv("DB_USER"))
-	fmt.Println("DB_PASSWORD:", os.Getenv("DB_PASSWORD"))
-
 	// Подключаемся к SQL Server через master для создания базы данных
 	masterDSN := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=master",
 		os.Getenv("DB_USER"),

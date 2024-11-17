@@ -26,10 +26,10 @@ jobs:
 
       - name: Run Docker Compose
         env:
-          DB_USER: sa
+          DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: localhost
-          DB_PORT: 1433
-          DB_NAME: testdb
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
         run: |
           docker-compose up -d --build
