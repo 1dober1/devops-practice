@@ -12,15 +12,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:
-      sqlserver:
-        image: mcr.microsoft.com/mssql/server:2022-latest
-        ports:
-          - 1433:1433
-        env:
-          SA_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          ACCEPT_EULA: "Y"
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -29,17 +20,6 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: 1.22
-
-      - name: Cache Go modules
-        uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Build the project
-        run: go build -v ./...
 
       - name: Install Docker Compose
         run: sudo apt-get install -y docker-compose
