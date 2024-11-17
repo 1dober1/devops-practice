@@ -14,7 +14,7 @@ jobs:
 
     services:
       sqlserver:
-        image: mcr.microsoft.com/mssql/server
+        image: mcr.microsoft.com/mssql/server:2022-latest
         ports:
           - 1433:1433
         env:
@@ -25,14 +25,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up GO
+      - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: 1.22
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      
       - name: Cache Go modules
         uses: actions/cache@v3
         with:
@@ -40,25 +37,19 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-          
-      - name: Set up env variables
-        run: |
-          echo "DB_HOST=db" >> $GITHUB_ENV
-          echo "DB_PORT=1433" >> $GITHUB_ENV
-          echo "DB_USER=sa" >> $GITHUB_ENV
-          echo "DB_NAME=testdb" >> $GITHUB_ENV
 
       - name: Build the project
         run: go build -v ./...
 
       - name: Install Docker Compose
-        run: sudo pip install docker-compose
+        run: sudo apt-get install -y docker-compose
 
-      - name: Run application
+      - name: Run Docker Compose
+        env:
+          DB_USER: sa
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: localhost
+          DB_PORT: 1433
+          DB_NAME: testdb
         run: |
-          DB_USER=${{ secrets.DB_USER }} \
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-          DB_HOST=db \
-          DB_PORT=1433 \
-          DB_NAME=testdb \
-          docker-compose up -d
+          docker-compose up -d --build

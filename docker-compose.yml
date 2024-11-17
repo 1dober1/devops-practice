@@ -2,11 +2,10 @@ version: '3.8'
 
 services:
   db:
-    image: mcr.microsoft.com/mssql/server
+    image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       SA_PASSWORD: ${DB_PASSWORD}
       ACCEPT_EULA: "Y"
-      MSSQL_TCP_PORT: 1433
     ports:
       - "1433:1433"
     volumes:
@@ -22,9 +21,7 @@ services:
       - db
     networks:
       - app-network
-    env_file:
-      - .env
-    command: sh -c "sleep 15 && ./main"  # Задержка перед запуском приложения
+    command: sh -c "sleep 10 && ./main"
 
 volumes:
   mssql_data:
