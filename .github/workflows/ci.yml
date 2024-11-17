@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  pull_requests:
+  pull_request:
     branches:
       - main
 
@@ -22,13 +22,16 @@ jobs:
           ACCEPT_EULA: "Y"
 
     steps:
-      - name: Chekout code
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up GO
         uses: actions/setup-go@v4
         with:
           go-version: 1.22
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
       
       - name: Cache Go modules
         uses: actions/cache@v3
