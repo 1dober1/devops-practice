@@ -11,8 +11,6 @@ services:
       - "1433:1433"
     volumes:
       - mssql_data:/var/opt/mssql
-    networks:
-      - app-network
 
   web:
     build: .
@@ -20,11 +18,14 @@ services:
       - "8080:8080"
     depends_on:
       - db
-    networks:
-      - app-network
     env_file:
       - .env
-    command: sh -c "sleep 15 && ./main"  # Задержка перед запуском приложения
+    environment:  # Передаем переменные окружения напрямую
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_HOST: "db"
+      DB_PORT: "1433"
+      DB_NAME: "testdb"
 
 volumes:
   mssql_data:
