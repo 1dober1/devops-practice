@@ -22,52 +22,51 @@ var db *gorm.DB
 
 func main() {
 	// Загружаем переменные окружения из .env файла
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load(".env"); err != nil {
 		panic("Error loading .env file")
 	}
 
-	// Формируем DSN для подключения к SQL Server
-	dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_NAME"),
-	)
+	fmt.Println("DB_USER:", os.Getenv("DB_USER"))
+	fmt.Println("DB_PASSWORD:", os.Getenv("DB_PASSWORD"))
 
-	// Подключаемся к SQL Server
-	var err error
-	db, err = gorm.Open(sqlserver.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect to the database")
-	}
-
-	// Получаем экземпляр базы данных
-	sqlDB, err := db.DB()
-	if err != nil {
-		panic("failed to get db instance")
-	}
-
-	// Проверяем существование базы данных
-	if err := createDatabaseIfNotExists(sqlDB, "testdb"); err != nil {
-		panic(fmt.Sprintf("failed to create database: %v", err))
-	}
-
-	// Переподключаемся к новой базе данных
-	dsn = fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=testdb",
+	// Подключаемся к SQL Server через master для создания базы данных
+	masterDSN := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=master",
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_PASSWORD"),
 		os.Getenv("DB_HOST"),
 		os.Getenv("DB_PORT"),
 	)
 
-	db, err = gorm.Open(sqlserver.Open(dsn), &gorm.Config{})
+	sqlDB, err := sql.Open("sqlserver", masterDSN)
 	if err != nil {
-		panic(fmt.Sprintf("failed to connect to the database 'testdb': %v", err))
+		panic(fmt.Sprintf("failed to connect to master database: %v", err))
+	}
+	defer sqlDB.Close()
+
+	// Проверяем или создаём базу данных
+	dbName := os.Getenv("DB_NAME")
+	if err := createDatabaseIfNotExists(sqlDB, dbName); err != nil {
+		panic(fmt.Sprintf("failed to create database '%s': %v", dbName, err))
 	}
 
+	// Подключаемся к созданной базе данных
+	appDSN := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		dbName,
+	)
+
+	db, err = gorm.Open(sqlserver.Open(appDSN), &gorm.Config{})
+	if err != nil {
+		panic(fmt.Sprintf("failed to connect to the database '%s': %v", dbName, err))
+	}
+
+	// Миграции
 	db.AutoMigrate(&User{})
 
+	// Запуск сервера
 	router := gin.Default()
 
 	router.GET("/", func(c *gin.Context) {
@@ -98,18 +97,23 @@ func main() {
 	router.Run(":8080")
 }
 
-// createDatabaseIfNotExists проверяет существование базы данных и создает ее, если она не существует
-func createDatabaseIfNotExists(db *sql.DB, dbName string) error { // Изменили аргумент на *sql.DB
+// createDatabaseIfNotExists проверяет существование базы данных и создает её, если она не существует
+func createDatabaseIfNotExists(db *sql.DB, dbName string) error {
 	var dbExists int
 	query := fmt.Sprintf("SELECT COUNT(*) FROM sys.databases WHERE name = '%s'", dbName)
 	err := db.QueryRow(query).Scan(&dbExists)
 	if err != nil {
-		return err
+		return fmt.Errorf("error checking database existence: %w", err)
 	}
 
 	if dbExists == 0 {
 		_, err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
-		return err
+		if err != nil {
+			return fmt.Errorf("error creating database: %w", err)
+		}
+		fmt.Printf("Database '%s' created successfully.\n", dbName)
+	} else {
+		fmt.Printf("Database '%s' already exists.\n", dbName)
 	}
 
 	return nil
