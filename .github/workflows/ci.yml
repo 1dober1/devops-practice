@@ -42,10 +42,11 @@ jobs:
             ${{ runner.os }}-go-
           
       - name: Set up env variables
-        run: echo "DB_HOST=localhost" >> $GITHUB_ENV
-        run: echo "DB_PORT=1433" >> $GITHUB_ENV
-        run: echo "DB_USER=sa" >> $GITHUB_ENV
-        run: echo "DB_NAME=testdb" >> $GITHUB_ENV
+        run: |
+          echo "DB_HOST=db" >> $GITHUB_ENV
+          echo "DB_PORT=1433" >> $GITHUB_ENV
+          echo "DB_USER=sa" >> $GITHUB_ENV
+          echo "DB_NAME=testdb" >> $GITHUB_ENV
 
       - name: Build the project
         run: go build -v ./...
