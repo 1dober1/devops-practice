@@ -1,58 +1,51 @@
-name : GO CI/CD
+name: Go CI
 
 on:
   push:
     branches:
       - main
-    pull_request:
-      branches:
-        - main
+  pull_requests:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     services:
-      db:
+      sqlserver:
         image: mcr.microsoft.com/mssql/server
-        env:
-          SA_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          ACCEPT_EULA: "Y"
-          MSSQL_TCP_PORT: 1433
         ports:
           - 1433:1433
-        
+        env:
+          SA_PASSWORD:$ {{ secrets.DB_PASSWORD }}
+          ACCEPT_EULA: "Y"
+
     steps:
-      # Клонируем репозиторий
-      - name: Checkout code
+      - name: Chekout code
         uses: actions/checkout@v3
 
-      # Устанавливаем Docker Compose
-      - name: Set up Docker Compose
-        run: sudo apt-get update && sudo apt-get install docker-compose-plugin -y
-
-      # Собираем и запускаем контейнеры через Docker Compose
-      - name: Build and Start Docker containers
-        run: docker compose up -d --build
-
-      # Устанавливаем GO
       - name: Set up GO
         uses: actions/setup-go@v4
         with:
           go-version: 1.22
       
-      # Устанавливаем зависимости
-      - name: Install dependencies
-        run: go mod download
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+          
+      - name: Set up env variables
+        run: echo "DB_HOST=localhost" >> $GITHUB_ENV
+        run: echo "DB_PORT=1433" >> $GITHUB_ENV
+        run: echo "DB_USER=sa" >> $GITHUB_ENV
+        run: echo "DB_NAME=testdb" >> $GITHUB_ENV
 
-      # Ждем готовности SQL server
-      - name: Wait for SQL server
-        run: sleep 10
+      - name: Build the project
+        run: go build -v ./...
 
-      # Собираем приложение
-      - name: Build Go application
-        run: go build -o main .
-
-      # Запуск приложения
-      - name: Run the application
-        run: ./main &
+      - name: Run application
+        run: docker-compose up -d
